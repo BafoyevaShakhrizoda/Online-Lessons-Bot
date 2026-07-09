@@ -15,3 +15,5 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 # har safar kerakli key yoki tokenlarni bir xil kod yozib bir nechta filelarda chaqirimasdan bitta configda yozib kerakli ma'lumotlarni imporrt qilib ishlatish uchun kerak 
+
+DB_URL    = os.getenv("DB_URL")

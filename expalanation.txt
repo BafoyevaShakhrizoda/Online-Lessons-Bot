@@ -1,0 +1,14 @@
+
+
+
+
+bot/
+├── logs/               ← avtomatik yaratiladi
+│   ├── bot.log         ← barcha loglar (DEBUG+)
+│   └── errors.log      ← faqat xatolar (ERROR+)
+├── utils/
+│   ├── logger.py
+│   └── db/
+│       ├── database.py
+│       └── queries.py
+...
