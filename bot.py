@@ -5,7 +5,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from config import BOT_TOKEN
 from utils.loggers import logger
 from utils.db.database import create_tables, close_engine
-from handlers import start, callback, register # kerakli ishga tushurish kerak bo'lgan handlersni chaqirganmiz
+from handlers import start, callback, register, profile , courses,admin # kerakli ishga tushurish kerak bo'lgan handlersni chaqirganmiz
+
 
 
 async def main():
@@ -20,6 +21,9 @@ async def main():
     dp.include_router(start.router)# bu yerda router handlarslarni yo'naltiradi vazifasi shu ya'ni menejer lekin dispatchersiz ishlamaydi
     dp.include_router(callback.router)
     dp.include_router(register.router)
+    dp.include_router(profile.router)
+    dp.include_router(courses.router)
+    dp.include_router(admin.router)
 
     logger.info("Barcha routerlar ulandi ")
     logger.info("Polling boshlandi ")
@@ -31,6 +35,6 @@ async def main():
         await close_engine()
         logger.info("Bot to'xtatildi")
 
-#------------
+
 if __name__ == "__main__":
     asyncio.run(main())

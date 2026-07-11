@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import (
 from config import DB_URL
 from utils.loggers import logger
 from utils.db.models import Base
+from sqlalchemy import text
 
 
 # databazani ulash uchun doimiy ishlatiladigan engine
@@ -34,3 +35,14 @@ async def close_engine(): # close engine degani bazaga ulanishni toxtatish degan
     
     # -> men qanaqadyr request jonatdim ( yangi user yaratdim) -> bazangga qo'shib qo'y(request)
     # -> qnadaydur response ( ya'ni bazasiga saqlab qo'yganini menga bildirishi kerak) -> qo'shib qo'ydim(response)
+
+async def create_tables():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+        # Mavjud jadvalga yangi ustun qo'shish (agar yo'q bo'lsa)
+        await conn.execute(text("""
+            ALTER TABLE users 
+            ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE
+        """))
+        logger.info("Jadvallar yaratildi ✅")
