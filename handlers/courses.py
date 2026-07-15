@@ -8,7 +8,12 @@ from utils.db.queries import (
 )
 from utils.loggers import logger
 
+
+from filters.registered_filter import IsRegistered #filterdan chaqirib 
+
+
 router = Router()
+router.message.filter(IsRegistered())   # qachonki user registratsiya qilsagini pastdagi kodlar ishlasin
 
 
 @router.message(F.text == "📚 Kurslar")

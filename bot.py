@@ -1,11 +1,13 @@
 import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage 
-
 from config import BOT_TOKEN
 from utils.loggers import logger
 from utils.db.database import create_tables, close_engine
 from handlers import start, callback, register, profile , courses,admin # kerakli ishga tushurish kerak bo'lgan handlersni chaqirganmiz
+
+from middlewares.logger_middleware import LoggerMiddleware
+from middlewares.throttling_middleware import ThrottlingMiddleware
 
 
 
@@ -17,6 +19,9 @@ async def main():
 
     bot = Bot(token=BOT_TOKEN)
     dp  = Dispatcher(storage=MemoryStorage())# bu direktor bo'lib routerlarni boshqaradi vazifalsi kerakli handlersni yo'naltirish
+    
+    dp.message.middleware(LoggerMiddleware())
+    dp.message.middleware(ThrottlingMiddleware(rate_limit=1.0))
 
     dp.include_router(start.router)# bu yerda router handlarslarni yo'naltiradi vazifasi shu ya'ni menejer lekin dispatchersiz ishlamaydi
     dp.include_router(callback.router)

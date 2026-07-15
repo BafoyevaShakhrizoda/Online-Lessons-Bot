@@ -3,7 +3,6 @@ from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from config import ADMIN_ID
 from keyboards.admin_kb import (
     admin_menu, courses_admin_menu,
     cancel_kb, course_actions_kb, lesson_actions_kb
@@ -16,12 +15,16 @@ from utils.db.queries import (
 )
 from utils.loggers import logger
 
+
+
+from filters.admin_filter import IsAdmin  # filterdan chaqirib olganmiz 
+
+
+
 router = Router()
+router.message.filter(IsAdmin()) # agar adminlikka mos kelsa kerakli handlerslarga yo'naltir
+router.callback_query.filter(IsAdmin()) # CRUD admin bo'lsa ruxsat ber
 
-
-
-def is_admin(user_id: int) -> bool:
-    return user_id == ADMIN_ID
 
 
 
@@ -55,10 +58,7 @@ class Broadcast(StatesGroup):
 
 @router.message(Command("admin"))# admin slashini bosganda  o'sha odamni idsini config id ilan tekshiradi 
 async def cmd_admin(message: Message): 
-    if not is_admin(message.from_user.id): # agar id lari mos kelmasa
-        await message.answer("⛔ Sizda ruxsat yo'q.") # shu natijani o'sha user ko'rsatadi 
-        logger.warning(f"Ruxsatsiz kirish | id={message.from_user.id}")# bu yerda log yozib ketadi
-        return
+
 
     await message.answer("🔧 <b>Admin panel</b>", # idlarini mos kelsa shu yozuv qilib
                          reply_markup=admin_menu,
@@ -85,9 +85,7 @@ async def admin_cancel(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == "admin_stats")
 async def show_stats(callback: CallbackQuery):
-    if not is_admin(callback.from_user.id): # staristika degan buttonnni bosganda callback bo'lib ketgan id admin id mos kelsa statistikani ko'rsat 
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True) # idlarini mos kelmasa shu javobni chiqar
-        return
+ 
 
     total   = await count_users() # hammasini 
     today   = await count_users_today() # bugun qo'shilganlarni hammasi 
@@ -111,9 +109,7 @@ async def show_stats(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin_users")
 async def show_users(callback: CallbackQuery):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
+  
 
     users = await get_all_users()
 
@@ -138,9 +134,7 @@ async def show_users(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin_courses")
 async def admin_courses(callback: CallbackQuery):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
+
 
     await callback.message.answer("📚 <b>Kurslar boshqaruvi</b>",
                                   reply_markup=courses_admin_menu,
@@ -151,9 +145,7 @@ async def admin_courses(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin_list_courses") # bazada nechta kurs bo'lsa hammasini chiqarib berish 
 async def list_courses_admin(callback: CallbackQuery):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
+
 
     courses = await get_all_courses(only_active=False) # faqat active bo'lgan hamma kurslarni chiqarib beradi 
 
@@ -184,9 +176,7 @@ async def list_courses_admin(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("admin_course_"))
 async def course_detail_admin(callback: CallbackQuery): # kursni ichida qanaqa ma'luotlar bo'lsa shularni hammasini chiqarib berish 
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
+
 
     course_id = int(callback.data.split("_")[2])
     course    = await get_course(course_id) # bitta kursni ma'lumotlarini chiqarib ber 
@@ -208,10 +198,7 @@ async def course_detail_admin(callback: CallbackQuery): # kursni ichida qanaqa m
 
 @router.callback_query(F.data == "admin_add_course") # admin kurs qo'shishi 
 async def start_add_course(callback: CallbackQuery, state: FSMContext):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
-
+  
     await callback.message.answer("Kurs nomini kiriting:",# admindan kursni nomini kiritishni so'raydi 
                                   reply_markup=cancel_kb)
     await state.set_state(AddCourse.title)
@@ -242,9 +229,7 @@ async def add_course_description(message: Message, state: FSMContext):
 
 @router.callback_query(F.data.startswith("admin_edit_course_"))
 async def start_edit_course(callback: CallbackQuery, state: FSMContext):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
+  
 
     course_id = int(callback.data.split("_")[3])
     await state.update_data(course_id=course_id)
@@ -276,9 +261,7 @@ async def edit_course_description(message: Message, state: FSMContext):
 
 @router.callback_query(F.data.startswith("admin_delete_course_"))
 async def confirm_delete_course(callback: CallbackQuery):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
+
 
     course_id = int(callback.data.split("_")[3])
     course    = await get_course(course_id)
@@ -313,9 +296,6 @@ async def do_delete_course(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("admin_lessons_"))
 async def list_lessons_admin(callback: CallbackQuery):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
 
     course_id = int(callback.data.split("_")[2]) #  aynan shu darslar o'sha kursga tegishliligini tekshirish 
     lessons   = await get_lessons_by_course(course_id)
@@ -371,9 +351,7 @@ async def lesson_detail_admin(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("admin_add_lesson_"))
 async def start_add_lesson(callback: CallbackQuery, state: FSMContext):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
+
 
     course_id = int(callback.data.split("_")[3])
     await state.update_data(course_id=course_id)
@@ -435,9 +413,7 @@ async def add_lesson_order(message: Message, state: FSMContext):
 
 @router.callback_query(F.data.startswith("admin_edit_lesson_"))
 async def start_edit_lesson(callback: CallbackQuery, state: FSMContext):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
+
 
     lesson_id = int(callback.data.split("_")[3])
     await state.update_data(lesson_id=lesson_id)
@@ -482,9 +458,7 @@ async def edit_lesson_video(message: Message, state: FSMContext):
 
 @router.callback_query(F.data.startswith("admin_delete_lesson_"))
 async def do_delete_lesson(callback: CallbackQuery):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
+
 
     lesson_id = int(callback.data.split("_")[3])
     await delete_lesson(lesson_id)
@@ -496,9 +470,7 @@ async def do_delete_lesson(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin_broadcast") # admin qanaqadur message yozadi u botga start bosgan hammaga koriniadi 
 async def start_broadcast(callback: CallbackQuery, state: FSMContext):
-    if not is_admin(callback.from_user.id):
-        await callback.answer("⛔ Ruxsat yo'q!", show_alert=True)
-        return
+
 
     await callback.message.answer("📢 Yubormoqchi bo'lgan xabaringizni yozing:",
                                   reply_markup=cancel_kb)
@@ -508,8 +480,7 @@ async def start_broadcast(callback: CallbackQuery, state: FSMContext):
 
 @router.message(Broadcast.message)
 async def send_broadcast(message: Message, state: FSMContext):
-    if not is_admin(message.from_user.id):
-        return
+
 
     users   = await get_all_users()
     success = 0

@@ -44,3 +44,15 @@ bot/
 └── logs/
     ├── bot.log
     └── errors.log
+
+
+
+8-darsda qo'shilgan filelar 
+
+bot/
+├── filters/
+│   ├── __init__.py
+│   └── admin_filter.py
+└── middlewares/
+    ├── __init__.py
+    └── logger_middleware.py
