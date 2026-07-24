@@ -13,10 +13,14 @@ class User(Base):
     tg_id:      Mapped[int]  = mapped_column(BigInteger, unique=True, nullable=False)
     full_name:  Mapped[str]  = mapped_column(String, nullable=False)
     phone:      Mapped[str]  = mapped_column(String, nullable=True)
-    is_blocked: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_blocked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    language:   Mapped[str]  = mapped_column(String, default="uz", nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
     enrollments: Mapped[list["Enrollment"]] = relationship(back_populates="user")
+    
+    def __repr__(self):
+        return f"<User tg_id={self.tg_id} name={self.full_name}>" 
 
     
 class Course(Base):
@@ -30,6 +34,9 @@ class Course(Base):
 
     lessons:     Mapped[list["Lesson"]] = relationship(back_populates="course")
     enrollments: Mapped[list["Enrollment"]] = relationship(back_populates="course")
+    
+    def __repr__(self):  
+        return f"<Course id={self.id} title={self.title}>"  
 
 
 class Lesson(Base):
@@ -41,8 +48,26 @@ class Lesson(Base):
     content:     Mapped[str] = mapped_column(Text, nullable=True)      
     video_url:   Mapped[str] = mapped_column(String, nullable=True)    
     order:       Mapped[int] = mapped_column(Integer, default=1)       
-
     course: Mapped["Course"] = relationship(back_populates="lessons")
+    media:  Mapped[list["LessonMedia"]] = relationship(back_populates="lesson")    
+    
+    def __repr__(self):
+        return f"<Lesson id={self.id} title={self.title}>" 
+
+
+class LessonMedia(Base):
+    __tablename__ = "lesson_media"
+
+    id:         Mapped[int] = mapped_column(primary_key=True)
+    lesson_id:  Mapped[int] = mapped_column(ForeignKey("lessons.id"), nullable=False)
+    media_type: Mapped[str] = mapped_column(String, nullable=False)
+    file_id:    Mapped[str] = mapped_column(String, nullable=False)
+    caption:    Mapped[str] = mapped_column(String, nullable=True)
+
+    lesson: Mapped["Lesson"] = relationship(back_populates="media")
+
+    def __repr__(self):
+        return f"<LessonMedia type={self.media_type} lesson={self.lesson_id}>"
 
 
 class Enrollment(Base):

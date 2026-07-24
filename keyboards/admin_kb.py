@@ -53,6 +53,14 @@ def lesson_actions_kb(lesson_id: int, course_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(
+                text="🖼 Media qo'shish",      #  yangi
+                callback_data=f"admin_add_media_{lesson_id}"
+            )],
+            [InlineKeyboardButton(
+                text="📎 Media ro'yxati",       #  yangi
+                callback_data=f"admin_media_list_{lesson_id}_{course_id}"
+            )],
+            [InlineKeyboardButton(
                 text="✏️ Tahrirlash",
                 callback_data=f"admin_edit_lesson_{lesson_id}"
             )],

@@ -1,0 +1,43 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "welcome"
+msgstr "Welcome, {name}! 👋"
+
+msgid "courses"
+msgstr "📚 Available courses"
+
+msgid "profile"
+msgstr "👤 Your profile"
+
+msgid "no_courses"
+msgstr "No courses available yet."
+
+msgid "enrolled"
+msgstr "✅ Successfully enrolled!"
+
+msgid "already_enrolled"
+msgstr "You are already enrolled."
+
+msgid "register_name"
+msgstr "Enter your name:"
+
+msgid "register_phone"
+msgstr "Share your phone number 👇"
+
+msgid "register_done"
+msgstr "✅ Registration complete!"
+
+msgid "cancelled"
+msgstr "Cancelled."
+
+msgid "no_permission"
+msgstr "⛔ You don't have permission."
+
+msgid "no_lessons"
+msgstr "No lessons in this course yet."
+
+msgid "lesson_done"
+msgstr "✅ Lesson materials sent!"
+

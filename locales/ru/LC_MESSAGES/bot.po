@@ -1,0 +1,43 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "welcome"
+msgstr "Добро пожаловать, {name}! 👋"
+
+msgid "courses"
+msgstr "📚 Доступные курсы"
+
+msgid "profile"
+msgstr "👤 Ваш профиль"
+
+msgid "no_courses"
+msgstr "Пока курсов нет."
+
+msgid "enrolled"
+msgstr "✅ Вы записались на курс!"
+
+msgid "already_enrolled"
+msgstr "Вы уже записаны."
+
+msgid "register_name"
+msgstr "Введите ваше имя:"
+
+msgid "register_phone"
+msgstr "Поделитесь номером телефона 👇"
+
+msgid "register_done"
+msgstr "✅ Вы зарегистрированы!"
+
+msgid "cancelled"
+msgstr "Отменено."
+
+msgid "no_permission"
+msgstr "⛔ У вас нет доступа."
+
+msgid "no_lessons"
+msgstr "В этом курсе пока нет уроков."
+
+msgid "lesson_done"
+msgstr "✅ Материалы урока отправлены!"
+

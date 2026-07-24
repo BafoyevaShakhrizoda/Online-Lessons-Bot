@@ -11,7 +11,8 @@ from utils.db.queries import (
     count_users, count_users_today,
     get_all_courses, get_course, add_course, update_course, delete_course,
     get_lessons_by_course, get_lesson, add_lesson, update_lesson, delete_lesson,
-    get_all_users, count_enrollments_per_course
+    get_all_users, count_enrollments_per_course,
+     add_lesson_media, get_lesson_media, delete_lesson_media 
 )
 from utils.loggers import logger
 
@@ -53,6 +54,11 @@ class EditLesson(StatesGroup):
 
 class Broadcast(StatesGroup):
     message = State()
+
+
+
+class AddMedia(StatesGroup):
+    waiting_media = State()   # rasm/video/fayl/sticker kutilmoqda
 
 
 
@@ -488,7 +494,7 @@ async def send_broadcast(message: Message, state: FSMContext):
 
     for user in users:
         try:
-            await message.bot.send_message(user.tg_id, message.text)
+            await message.copy_to(chat_id=user.tg_id)
             success += 1
         except Exception as e:
             failed += 1
@@ -502,3 +508,159 @@ async def send_broadcast(message: Message, state: FSMContext):
         reply_markup=admin_menu
     )
     logger.info(f"Broadcast | muvaffaqiyatli={success} | xato={failed}")
+    
+    
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+    
+    
+
+# Media qo'shish — tugma bosilganda
+@router.callback_query(F.data.startswith("admin_add_media_"))
+async def start_add_media(callback: CallbackQuery, state: FSMContext):
+    lesson_id = int(callback.data.split("_")[3])
+    await state.update_data(lesson_id=lesson_id)
+
+    await callback.message.answer(
+        "📎 Media yuboring:\n\n"
+        "🖼 Rasm\n"
+        "🎥 Video\n"
+        "📄 Fayl (document)\n"
+        "😀 Sticker\n\n"
+        "Istalgan turini yuboring 👇",
+        reply_markup=cancel_kb
+    )
+    await state.set_state(AddMedia.waiting_media)
+    await callback.answer()
+
+
+# Rasm keldi
+@router.message(AddMedia.waiting_media, F.photo)
+async def add_media_photo(message: Message, state: FSMContext):
+    data      = await state.get_data()
+    lesson_id = data["lesson_id"]
+    photo     = message.photo[-1]   # eng yuqori sifat
+
+    await add_lesson_media(
+        lesson_id=lesson_id,
+        media_type="photo",
+        file_id=photo.file_id,
+        caption=message.caption
+    )
+    await state.clear()
+    await message.answer("✅ Rasm darsga qo'shildi!", reply_markup=admin_menu)
+
+
+# Video keldi
+@router.message(AddMedia.waiting_media, F.video)
+async def add_media_video(message: Message, state: FSMContext):
+    data      = await state.get_data()
+    lesson_id = data["lesson_id"]
+
+    await add_lesson_media(
+        lesson_id=lesson_id,
+        media_type="video",
+        file_id=message.video.file_id,
+        caption=message.caption
+    )
+    await state.clear()
+    await message.answer("✅ Video darsga qo'shildi!", reply_markup=admin_menu)
+
+
+# Fayl keldi
+@router.message(AddMedia.waiting_media, F.document)
+async def add_media_document(message: Message, state: FSMContext):
+    data      = await state.get_data()
+    lesson_id = data["lesson_id"]
+
+    await add_lesson_media(
+        lesson_id=lesson_id,
+        media_type="document",
+        file_id=message.document.file_id,
+        caption=message.caption or message.document.file_name
+    )
+    await state.clear()
+    await message.answer("✅ Fayl darsga qo'shildi!", reply_markup=admin_menu)
+
+
+# Sticker keldi
+@router.message(AddMedia.waiting_media, F.sticker)
+async def add_media_sticker(message: Message, state: FSMContext):
+    data      = await state.get_data()
+    lesson_id = data["lesson_id"]
+
+    await add_lesson_media(
+        lesson_id=lesson_id,
+        media_type="sticker",
+        file_id=message.sticker.file_id,
+        caption=None
+    )
+    await state.clear()
+    await message.answer("✅ Sticker darsga qo'shildi!", reply_markup=admin_menu)
+
+
+# Media ro'yxati — admin ko'rish va o'chirish uchun
+@router.callback_query(F.data.startswith("admin_media_list_"))
+async def show_media_list(callback: CallbackQuery):
+    parts     = callback.data.split("_")
+    lesson_id = int(parts[3])
+    course_id = int(parts[4])
+    media_list = await get_lesson_media(lesson_id)
+
+    if not media_list:
+        await callback.message.answer(
+            "Bu darsda hali media yo'q.",
+            reply_markup=lesson_actions_kb(lesson_id, course_id)
+        )
+        await callback.answer()
+        return
+
+    # Har bir mediaga o'chirish tugmasi
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    buttons = []
+    for m in media_list:
+        icon = {"photo": "🖼", "video": "🎥",
+                "document": "📄", "sticker": "😀"}.get(m.media_type, "📎")
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"{icon} {m.media_type} | {m.caption or 'caption yo\'q'}",
+                callback_data=f"admin_delete_media_{m.id}_{lesson_id}_{course_id}"
+            )
+        ])
+
+    buttons.append([
+        InlineKeyboardButton(
+            text="⬅️ Orqaga",
+            callback_data=f"admin_lesson_{lesson_id}_{course_id}"
+        )
+    ])
+
+    await callback.message.answer(
+        f"📎 <b>Dars medialari ({len(media_list)} ta):</b>\n"
+        "O'chirish uchun bosing 👇",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+
+# Media o'chirish
+@router.callback_query(F.data.startswith("admin_delete_media_"))
+async def delete_media(callback: CallbackQuery):
+    parts     = callback.data.split("_")
+    media_id  = int(parts[3])
+    lesson_id = int(parts[4])
+    course_id = int(parts[5])
+
+    await delete_lesson_media(media_id)
+    await callback.message.answer(
+        "✅ Media o'chirildi.",
+        reply_markup=lesson_actions_kb(lesson_id, course_id)
+    )
+    await callback.answer()

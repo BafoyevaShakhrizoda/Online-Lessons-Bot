@@ -2,8 +2,9 @@ from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from keyboards.reply import main_menu, contact_menu
-from utils.db.queries import add_user, get_user
+from keyboards.reply import get_main_menu, get_contact_menu
+from utils.db.queries import add_user
+from utils.i18n import _
 from utils.loggers import logger
 
 router = Router()
@@ -14,29 +15,18 @@ class Register(StatesGroup):
     phone = State()
 
 
-@router.message(F.text == "👤 Profil")
-async def start_register(message: Message, state: FSMContext):
-    user = await get_user(message.from_user.id)
-
-    if user:
-        await message.answer(
-            f"👤 <b>Profilingiz:</b>\n\n" # border qilish uchun 
-            f"Ism: {user.full_name}\n" 
-            f"Telefon: {user.phone}\n"
-            f"Ro'yxatdan o'tgan: {user.created_at}",
-            parse_mode="HTML" # o'sha holati ishlashi uchun shuni chaqirib qo'yammiz
-        )
-    else: # agar bazadan topolmasa o'zi avtomatik registratsiya qilishni so'raydi 
-        await message.answer("Ismingizni kiriting:")
-        await state.set_state(Register.name) # agar ismini kiritsa va kod. uni qabul qilsa , keyingi routerga o'tadi 
-
- 
-@router.message(Register.name) # ismini kiritdi, kod uni qabul qildi , endi keyingi actionni ya'ni telefon nomer kiritishni so'raydi
+@router.message(Register.name)
 async def get_name(message: Message, state: FSMContext):
+    state_data = await state.get_data()
+    lang = state_data.get("lang", "uz")
+    
     await state.update_data(name=message.text)
+    
+    phone_prompt = _("register_phone", lang=lang)
+    
     await message.answer(
-        "Telefon raqamingizni ulashing 👇",
-        reply_markup=contact_menu
+        phone_prompt,
+        reply_markup=get_contact_menu(lang)
     )
     await state.set_state(Register.phone)
 
@@ -45,26 +35,32 @@ async def get_name(message: Message, state: FSMContext):
 async def get_phone(message: Message, state: FSMContext):
     data  = await state.get_data()
     name  = data["name"]
+    lang  = data.get("lang", "uz")
     phone = message.contact.phone_number
- # hamma kerakli ma'lumotlaar olingandan keyin bazaga saqlash boshlanadi ma'lumotlar kerakli ustunlarga taqqoslanadi
+
     await add_user(
-        tg_id=message.from_user.id, # bu yerda callbackdan qaytgan aynan osha usrning maliumotlaridan telegrma idsini olib bazadagi tg_id ga saqlayd
-        full_name=name, # boshida registratsiyada kiritgan ismini bazadagi full name ustuniga saqlaydi
-        phone=phone  # registrdagi nomerni bazaga saqlaydi
+        tg_id=message.from_user.id,
+        full_name=name,
+        phone=phone,
+        language=lang
     )
-    logger.info(f"Ro'yxatdan o'tish yakunlandi | id={message.from_user.id}")
+    logger.info(f"Ro'yxatdan o'tish yakunlandi | id={message.from_user.id} | ism={name} | til={lang}")
+
+    welcome_text = _("welcome", lang=lang, name=message.from_user.first_name)
+    reg_done_text = _("register_done", lang=lang)
 
     await message.answer(
-        f"✅ Ma'lumotlaringiz saqlandi!\n"
-        f"Ism: {name}\n"
-        f"Telefon: {phone}",
-        reply_markup=main_menu
+        f"{reg_done_text}\n\n{welcome_text}",
+        reply_markup=get_main_menu(lang)
     )
-    await state.clear() # xonada ishimizni qilib bo'lgandan keyin shu xonadan chqib ketish keyingi ishlar uchun boshqa xoanga kiriladi
+    await state.clear()
 
 
-@router.message(Register.phone, F.text == "❌ Bekor qilish")
+@router.message(Register.phone, F.text.in_({"❌ Bekor qilish", "Bekor qilish", "❌ Отмена", "❌ Cancel"}))
 async def cancel_register(message: Message, state: FSMContext):
+    state_data = await state.get_data()
+    lang = state_data.get("lang", "uz")
+    
     logger.info(f"Ro'yxatdan o'tish bekor qilindi | id={message.from_user.id}")
     await state.clear()
-    await message.answer("Bekor qilindi.", reply_markup=main_menu)
+    await message.answer(_("cancelled", lang=lang), reply_markup=get_main_menu(lang))

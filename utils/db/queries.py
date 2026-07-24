@@ -1,23 +1,24 @@
 from sqlalchemy import select, delete, update, func # o'sha select 
 from sqlalchemy.dialects.postgresql import insert # o'sha insert
 from utils.db.database import AsyncSessionLocal # databazaga ulangandan keyin chaqirilgan
-from utils.db.models import User,Lesson,Course,Enrollment # databazani ichida yaratilgan table chaqirlgan
+from utils.db.models import User,Lesson,Course,Enrollment,LessonMedia # databazani ichida yaratilgan table chaqirlgan
 from utils.loggers import logger # shu file ni ichida kodlar qay holatda ishlasa shuni hammasini formatlab yozib boradi
 from datetime import datetime
 
 
 
-async def add_user(tg_id: int, full_name: str, phone: str):
+async def add_user(tg_id: int, full_name: str, phone: str, language: str = "uz"):
     async with AsyncSessionLocal() as session: # xuddi get connectionni chaqirgandek chaqirilgan 
         stmt = insert(User).values(
             tg_id=tg_id,
             full_name=full_name,
-            phone=phone #. insert into table values (ali, vali)
+            phone=phone,
+            language=language
         ).on_conflict_do_nothing(index_elements=["tg_id"]) # databazaga registratsiya qilgan usetni qo'sh agar o'sha bo'lsa xatolik berma
 
         await session.execute(stmt)
         await session.commit()
-        logger.info(f"Foydalanuvchi saqlandi | id={tg_id} | ism={full_name}")
+        logger.info(f"Foydalanuvchi saqlandi | id={tg_id} | ism={full_name} | til={language}")
 
 # select * from users where id = { siz soragan id};
 async def get_user(tg_id: int) -> User | None: # agar bazada bo'lsa datalarni qaytaradi bo'lmasa None
@@ -72,6 +73,11 @@ async def count_users_today() -> int:
         )
         return result.scalar()
  # bugun databazaga qancha odam qo'shilganini sanab beradi 
+
+
+
+
+
 
 
 
@@ -132,8 +138,32 @@ async def count_enrollments_per_course() -> list[dict]:
             .group_by(Course.id) # kurshar bir kurs uchun alohida sanagan ya'ni har bitta kurs gruppalangan
         )
         return [{"title": row[0], "count": row[1]} for row in result.all()] # hammasini nomi va nechta userlari borligini sonini adminga qaytaradi 
-    
-    
+
+
+#the new one    
+async def get_courses_paginated(page: int, size: int) -> list[Course]:
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(Course)
+            .where(Course.is_active == True)
+            .offset(page * size)
+            .limit(size)
+        )
+        return result.scalars().all()   
+
+
+async def count_all_courses(only_active: bool = True) -> int:
+    async with AsyncSessionLocal() as session:
+        query = select(func.count()).select_from(Course)
+        if only_active:
+            query = query.where(Course.is_active == True)
+        result = await session.execute(query)
+        return result.scalar()
+
+
+
+
+
 
 
 # endi kurslar sectioni darsni ko'ramiz 
@@ -193,6 +223,52 @@ async def delete_lesson(lesson_id: int):
 
 # lessons bo'lgandan keyin nedi enrollmentni ko'ramiz
 
+
+
+
+
+
+async def add_lesson_media(
+    lesson_id: int,
+    media_type: str,
+    file_id: str,
+    caption: str | None = None
+) -> LessonMedia:
+    async with AsyncSessionLocal() as session:
+        media = LessonMedia(
+            lesson_id=lesson_id,
+            media_type=media_type,
+            file_id=file_id,
+            caption=caption
+        )
+        session.add(media)
+        await session.commit()
+        await session.refresh(media)
+        logger.info(f"Media qo'shildi | dars={lesson_id} | tur={media_type}")
+        return media
+
+async def get_lesson_media(lesson_id: int) -> list[LessonMedia]:
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(LessonMedia).where(LessonMedia.lesson_id == lesson_id)
+        )
+        return result.scalars().all()
+
+
+async def delete_lesson_media(media_id: int):
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            delete(LessonMedia).where(LessonMedia.id == media_id)
+        )
+        await session.commit()
+        logger.info(f"Media o'chirildi | id={media_id}")
+
+
+
+
+
+
+
 async def enroll_user(user_id: int, course_id: int):# modelsda 3 ta table'dagi mos qiymatlar  birlashtirilgandi 
     async with AsyncSessionLocal() as session:
         # Avval yozilganmi tekshiramiz
@@ -220,3 +296,14 @@ async def get_user_courses(user_id: int) -> list[Course]: # user qaysi kurslarni
             .where(Enrollment.user_id == user_id) # undan keyin enrolment bilan userni ma'lumotlari mmos kelganini oladi shunda o'sha user qaysi qaysi kurslarda o'qiyotgani chiqadi
         )
         return result.scalars().all() # user band qilgan hamma kurslarni chiqar
+
+
+async def update_user_language(tg_id: int, lang: str):
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            update(User)
+            .where(User.tg_id == tg_id)
+            .values(language=lang)
+        )
+        await session.commit()
+        logger.info(f"Foydalanuvchi tili yangilandi | id={tg_id} | til={lang}")

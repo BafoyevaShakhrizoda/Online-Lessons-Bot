@@ -1,0 +1,43 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "welcome"
+msgstr "Xush kelibsiz, {name}! 👋"
+
+msgid "courses"
+msgstr "📚 Mavjud kurslar"
+
+msgid "profile"
+msgstr "👤 Profilingiz"
+
+msgid "no_courses"
+msgstr "Hozircha kurslar mavjud emas."
+
+msgid "enrolled"
+msgstr "✅ Kursga yozildingiz!"
+
+msgid "already_enrolled"
+msgstr "Siz allaqachon yozilgansiz."
+
+msgid "register_name"
+msgstr "Ismingizni kiriting:"
+
+msgid "register_phone"
+msgstr "Telefon raqamingizni ulashing 👇"
+
+msgid "register_done"
+msgstr "✅ Ro'yxatdan o'tdingiz!"
+
+msgid "cancelled"
+msgstr "Bekor qilindi."
+
+msgid "no_permission"
+msgstr "⛔ Sizda ruxsat yo'q."
+
+msgid "no_lessons"
+msgstr "Bu kursda hali darslar yo'q."
+
+msgid "lesson_done"
+msgstr "✅ Dars materiallari yuborildi!"
+

@@ -45,4 +45,8 @@ async def create_tables():
             ALTER TABLE users 
             ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE
         """))
+        await conn.execute(text("""
+            ALTER TABLE users 
+            ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'uz'
+        """))
         logger.info("Jadvallar yaratildi ✅")

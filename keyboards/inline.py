@@ -8,4 +8,12 @@ courses_menu = InlineKeyboardMarkup(
     ] 
 )
 
+lang_menu = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="Uzbek tili", callback_data="course_python")], 
+        [InlineKeyboardButton(text="Rus tili", callback_data="course_sql")],
+        [InlineKeyboardButton(text="Ingliz tili", callback_data="course_bot")], 
+    ] 
+)
+
 # bu yerda xabardan chiqadigan tugmalar yaratilgan
